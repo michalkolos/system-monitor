@@ -1,6 +1,13 @@
-package com.michalkolos.cpu;
+/*
+ * Copyright (c) 2021 by Michal Kolosowski.
+ */
 
-public class CpuTimes {
+package com.michalkolos.cpu.data;
+
+/**
+ * Holds parsed temporal data from /proc/stat file.
+ */
+public class CpuCoreTimes {
 	private long user = 0;       //  Time spent with normal processing in user mode.
 	private long nice = 0;       //  Time spent with niced processes in user mode.
 	private long system = 0;     //  Time spent running in kernel mode.
@@ -16,7 +23,7 @@ public class CpuTimes {
 	//	can be queried using:
 	//      * Shell: getconf CLK_TCK
 
-	//  TODO: Get CLK_TCK value in runtime.
+	//  TODO: Get CLK_TCK value at runtime.
 
 
 	public long getUser() {

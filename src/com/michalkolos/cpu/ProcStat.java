@@ -1,25 +1,61 @@
+/*
+ * Copyright (c) 2021 by Michal Kolosowski.
+ */
+
 package com.michalkolos.cpu;
 
+import com.michalkolos.cpu.data.CpuCoreTimes;
+import com.michalkolos.cpu.data.CpuCoreUsageDetails;
+
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+
+/**
+ * Provides data gathered from "/proc/stat" file. This includes current CPU
+ * usage per core, total number of context switches, time of system boot,
+ * processes created since boot, processes that are currently running and
+ * processes that are blocked by I/O request.
+ */
 public class ProcStat {
 
-	private final int cpuCoresCount;
+	public static final String SYS_FILE_PATH = "/proc/stat";
 
-	private CpuTimes previousTotalTimes;
-	private final List<CpuTimes> previousCoreTimes;
 
-	private double totalCpuUsage;
-	private final List<Double> coreCpuUsage;
+	/**
+	 * Number of logical CPU cores. Calculated by counting rows in stat file
+	 * that start with "cpu##" string.
+	 */
+	private int cpuCoresCount = 0;
+
+	/**
+	 * Data for all cores combined measured in previous execution of
+	 * dataAcquisitionLoop() method.
+	 */
+	private CpuCoreTimes previousTotalTimes;
+
+	/**
+	 * Data for individual logical cores measured in previous execution of
+	 * dataAcquisitionLoop() method.
+	 */
+	private final List<CpuCoreTimes> previousCoreTimes;
+
+	/**
+	 * Current CPU usage data.
+	 */
+	private CpuCoreUsageDetails totalCpuUsage;
+
+	/**
+	 * Curent usage data per logical core. List index represents core ID number.
+	 */
+	private final List<CpuCoreUsageDetails> coreCpuUsage;
 
 	private long contextSwitchesCount = 0;
 	private Instant bootTime = Instant.MIN;
@@ -29,28 +65,50 @@ public class ProcStat {
 
 
 
+	public ProcStat() throws FileNotFoundException {
+		this.cpuCoresCount = countCores();
 
-
-	public ProcStat(int cpuCoresCount) {
-		this.cpuCoresCount = cpuCoresCount;
-
-		this.previousTotalTimes = new CpuTimes();
-		this.previousCoreTimes = Stream.generate(CpuTimes::new)
-				.limit(cpuCoresCount)
+		this.previousTotalTimes = new CpuCoreTimes();
+		this.previousCoreTimes = Stream.generate(CpuCoreTimes::new)
+				.limit(this.cpuCoresCount)
 				.collect(Collectors.toList());
 
-		this.totalCpuUsage = 0.0d;
-		this.coreCpuUsage = new ArrayList<Double>(Collections.nCopies(cpuCoresCount, 0.0d));
+		this.totalCpuUsage = new CpuCoreUsageDetails();
+
+		this.coreCpuUsage = Stream.generate(CpuCoreUsageDetails::new)
+				.limit(this.cpuCoresCount)
+				.collect(Collectors.toList());
 	}
 
 
+	//  TODO: Research core count changing in time on some systems (eg. Android
+	//   phones). https://stackoverflow.com/questions/22405403/android-cpu-cores-reported-in-proc-stat
 
 
+	/**
+	 * Calculates number of logical cores by counting rows in stat file that
+	 * start with "cpu##" string.
+	 * @return Number of logical CPU cores.
+	 * @throws FileNotFoundException Thrown when "proc/stat" file in inaccessible.
+	 */
+	private int countCores() throws FileNotFoundException {
+		BufferedReader reader = new BufferedReader(new FileReader(SYS_FILE_PATH));
 
-	private CpuTimes parseCpuLine(String line) {
+		return (int)reader.lines()
+				.filter((String line) -> line.matches("cpu[0-9]+.*"))
+				.count();
+	}
+
+
+	/**
+	 * Reads CPU data from appropriate line in the "proc/stat" file.
+	 * @param line One line from the "proc/stat" file begging with "cpu".
+	 * @return Parsed data from every column in the line.
+	 */
+	private CpuCoreTimes parseCpuLine(String line) {
 		List<String> fields = Arrays.asList(line.split(" +"));
 
-		CpuTimes parsedData = new CpuTimes();
+		CpuCoreTimes parsedData = new CpuCoreTimes();
 
 		if(fields.size() >= 10) {
 			parsedData.setUser(Long.parseLong(fields.get(1)));
@@ -67,13 +125,30 @@ public class ProcStat {
 		return parsedData;
 	}
 
+
+	/**
+	 * Reads value from a single line of "proc/stat" file that golds single name -
+	 * value pair.
+	 * @param line One line from the "proc/stat" file that holds single name -
+	 *             numeric value pair.
+	 * @return  Parsed value.
+	 */
 	private long parseSingleValueLine(String line) {
 		List<String> fields = Arrays.asList(line.split(" "));
 
 		return Long.parseLong(fields.get(1));
 	}
 
-	private double calculateCpuUsage(CpuTimes previous, CpuTimes current) {
+
+	/**
+	 * Calculates different usage modes ratios based on raw elapsed time data.
+	 * @param previous Data gathered in the previous execution of the
+	 *                 dataAcquisitionLoop() method.
+	 * @param current Data gathered in the most recent execution of the
+	 *                dataAcquisitionLoop() method.
+	 * @return Object containing all the usage data.
+	 */
+	private CpuCoreUsageDetails calculateCpuUsage(CpuCoreTimes previous, CpuCoreTimes current) {
 
 		long previousIdle = previous.getIdle() + previous.getIowait();
 		long currentIdle = current.getIdle() + current.getIowait();
@@ -92,33 +167,47 @@ public class ProcStat {
 		long totalDifference = currentTotal - previousTotal;
 		long idleDifference = currentIdle - previousIdle;
 
-		double cpuUsage = (double)(totalDifference - idleDifference) / totalDifference;
+		CpuCoreUsageDetails usageDetails = new CpuCoreUsageDetails();
+		usageDetails.setTotalUsage((float)(totalDifference - idleDifference)
+				/ totalDifference);
+		usageDetails.setIoUsage((float)(current.getIowait() - previous.getIowait())
+				/ totalDifference);
+		usageDetails.setSystemUsage((float)(current.getSystem() - previous.getSystem())
+				/ totalDifference);
+		usageDetails.setUserUsage((float)(current.getUser() - previous.getUser())
+				/ totalDifference);
+		usageDetails.setHardIrqUsage((float)(current.getIrq() - previous.getIrq())
+				/ totalDifference);
+		usageDetails.setSoftIrqUsage((float)(current.getSoftirq() - previous.getSoftirq())
+				/ totalDifference);
 
-		if(cpuUsage < 0) {
-			System.out.println();
-		}
 
-		return cpuUsage;
+		return usageDetails;
 	}
 
 
-
-
+	/**
+	 * Method that needs to be called periodically to gather data from the
+	 * "proc/stat file. This system file is constantly updated with cpu usage
+	 * statistics for entire CPU as well as for individual logical cores.
+	 * @throws IOException Exception thrown when the accessed file is
+	 * unavailable.
+	 */
 	public void dataAcquisitionLoop() throws IOException{
 
-		BufferedReader reader = new BufferedReader(new FileReader("/proc/stat"));
+		BufferedReader reader = new BufferedReader(new FileReader(SYS_FILE_PATH));
 
 		//  Total CPU usage.
-		CpuTimes currentCpuTimes = parseCpuLine(reader.readLine());
-		this.totalCpuUsage = calculateCpuUsage(this.previousTotalTimes, currentCpuTimes);
+		CpuCoreTimes currentCpuCoreTimes = parseCpuLine(reader.readLine());
+		this.totalCpuUsage = calculateCpuUsage(this.previousTotalTimes, currentCpuCoreTimes);
 
-		this.previousTotalTimes = currentCpuTimes;
+		this.previousTotalTimes = currentCpuCoreTimes;
 
 		//  CPU usage per core.
 		for(int i = 0; i < cpuCoresCount; i++) {
-			currentCpuTimes = parseCpuLine(reader.readLine());
-			this.coreCpuUsage.set(i, calculateCpuUsage(this.previousCoreTimes.get(i), currentCpuTimes));
-			this.previousCoreTimes.set(i, currentCpuTimes);
+			currentCpuCoreTimes = parseCpuLine(reader.readLine());
+			this.coreCpuUsage.set(i, calculateCpuUsage(this.previousCoreTimes.get(i), currentCpuCoreTimes));
+			this.previousCoreTimes.set(i, currentCpuCoreTimes);
 		}
 
 		//  System interrupts section - not recorded.
@@ -148,17 +237,41 @@ public class ProcStat {
 		return cpuCoresCount;
 	}
 
-	public double getTotalCpuUsage() {
-		return totalCpuUsage;
+	public float getTotalCpuUsage() {
+		return totalCpuUsage.getTotalUsage();
 	}
 
-	public double getCoreCpuUsage(int coreNumber) {
+	public CpuCoreUsageDetails getCoreCpuUsageDetails(int coreNumber) {
 		if(coreNumber >= 0 && coreNumber < coreCpuUsage.size()) {
 			return coreCpuUsage.get(coreNumber);
 		} else {
-			return 0.0f;
+			return new CpuCoreUsageDetails();
 		}
 	}
+
+	public float getCoreCpuUsage(int coreNumber) {
+		return getCoreCpuUsageDetails(coreNumber).getTotalUsage();
+	}
+
+	public float getCoreCpuIoWait(int coreNumber) {
+		return getCoreCpuUsageDetails(coreNumber).getIoUsage();
+	}
+
+	public float getCoreCpuUserSpaceUsage(int coreNumber) {
+		return getCoreCpuUsageDetails(coreNumber).getUserUsage();
+	}
+
+	public float getCoreCpuSystemSpaceUsage(int coreNumber) {
+		return getCoreCpuUsageDetails(coreNumber).getSystemUsage();
+	}
+
+	public float getCoreCpuSoftwareIrqUsage(int coreNumber) {
+		return getCoreCpuUsageDetails(coreNumber).getSoftIrqUsage();
+	}
+	public float getCoreCpuHardwareIrqUsage(int coreNumber) {
+		return getCoreCpuUsageDetails(coreNumber).getHardIrqUsage();
+	}
+
 
 	public long getContextSwitchesCount() {
 		return contextSwitchesCount;

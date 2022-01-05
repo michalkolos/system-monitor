@@ -6,6 +6,7 @@ package com.michalkolos;
 
 import com.michalkolos.cpu.CpuFrequency;
 import com.michalkolos.cpu.ProcStat;
+import com.michalkolos.hwmon.HwmonExplorrer;
 import com.sun.management.OperatingSystemMXBean;
 
 import java.io.FileNotFoundException;
@@ -32,6 +33,7 @@ public class Main {
 
 
         CpuFrequency cpuFrequency = new CpuFrequency();
+        HwmonExplorrer hwmonExplorrer = new HwmonExplorrer();
 
         for(int i = 0; i < 100; i++) {
 
@@ -42,8 +44,9 @@ public class Main {
                 e.printStackTrace();
             }
 
-            procStatPrint(systemBean, procStat);
-            cpuFreqPrint(cpuFrequency);
+//            procStatPrint(systemBean, procStat);
+//            cpuFreqPrint(cpuFrequency);
+            System.out.println(hwmonExplorrer.allSubsystemsToString());
 
 
             try {

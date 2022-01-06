@@ -6,12 +6,15 @@ package com.michalkolos.cpu;
 
 import com.michalkolos.cpu.data.CpuCoreTimes;
 import com.michalkolos.cpu.data.CpuCoreUsageDetails;
+import com.michalkolos.input.SourceFile;
 
+import javax.xml.transform.Source;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +35,8 @@ public class ProcStat {
 	 * Absolute path to the "proc/stat" file.
 	 */
 	public static final String SYS_FILE_PATH = "/proc/stat";
+
+	private final SourceFile statFile;
 
 	/**
 	 * Number of logical CPU cores. Calculated by counting rows in stat file
@@ -69,8 +74,11 @@ public class ProcStat {
 
 
 
-	public ProcStat() throws FileNotFoundException {
-		this.cpuCoresCount = countCores();
+	public ProcStat() throws IOException {
+		this.statFile = new SourceFile(SYS_FILE_PATH);
+		List<String> statFileLines = statFile.readLines();
+
+		this.cpuCoresCount = countCores(statFileLines);
 
 		this.previousTotalTimes = new CpuCoreTimes();
 		this.previousCoreTimes = Stream.generate(CpuCoreTimes::new)
@@ -95,10 +103,10 @@ public class ProcStat {
 	 * @return Number of logical CPU cores.
 	 * @throws FileNotFoundException Thrown when "proc/stat" file in inaccessible.
 	 */
-	private int countCores() throws FileNotFoundException {
-		BufferedReader reader = new BufferedReader(new FileReader(SYS_FILE_PATH));
+	private int countCores(List<String> lines) {
+		lines = lines != null ? lines : new ArrayList<>();
 
-		return (int)reader.lines()
+		return (int)lines.stream()
 				.filter((String line) -> line.matches("cpu[0-9]+.*"))
 				.count();
 	}

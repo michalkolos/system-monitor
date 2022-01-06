@@ -4,19 +4,21 @@
 
 package com.michalkolos.cpu.data;
 
+import java.util.Optional;
+
 /**
  * Holds parsed temporal data from /proc/stat file.
  */
 public class CpuCoreTimes {
-	private long user = 0;       //  Time spent with normal processing in user mode.
-	private long nice = 0;       //  Time spent with niced processes in user mode.
-	private long system = 0;     //  Time spent running in kernel mode.
-	private long idle = 0;       //  Time spent in vacations twiddling thumbs.
-	private long iowait = 0;     //  Time spent waiting for I/O to completed. This is considered idle time too.
-	private long irq = 0;        //  Time spent serving hardware interrupts.
-	private long softirq = 0;    //  Time spent serving software interrupts.
-	private long steal = 0;      //  Time stolen by other operating systems running in a virtual environment.
-	private long guest = 0;      //  Time spent for running a virtual CPU or guest OS under the control of the kernel.
+	private Long user = null;       //  Time spent with normal processing in user mode.
+	private Long nice = null;       //  Time spent with niced processes in user mode.
+	private Long system = null;     //  Time spent running in kernel mode.
+	private Long idle = null;       //  Time spent in vacations twiddling thumbs.
+	private Long iowait = null;     //  Time spent waiting for I/O to completed. This is considered idle time too.
+	private Long irq = null;        //  Time spent serving hardware interrupts.
+	private Long softirq = null;    //  Time spent serving software interrupts.
+	private Long steal = null;      //  Time stolen by other operating systems running in a virtual environment.
+	private Long guest = null;      //  Time spent for running a virtual CPU or guest OS under the control of the kernel.
 
 	//	The time is measured in USER_HZ (also called Jiffies) which are
 	//	typically 1/100ths of a second. USER_HZ is a compile time constant which
@@ -26,72 +28,72 @@ public class CpuCoreTimes {
 	//  TODO: Get CLK_TCK value at runtime.
 
 
-	public long getUser() {
-		return user;
+	public Optional<Long> getUser() {
+		return Optional.ofNullable(user);
 	}
 
 	public void setUser(long user) {
 		this.user = user;
 	}
 
-	public long getNice() {
-		return nice;
+	public Optional<Long> getNice() {
+		return Optional.ofNullable(nice);
 	}
 
 	public void setNice(long nice) {
 		this.nice = nice;
 	}
 
-	public long getSystem() {
-		return system;
+	public Optional<Long> getSystem() {
+		return Optional.ofNullable(system);
 	}
 
 	public void setSystem(long system) {
 		this.system = system;
 	}
 
-	public long getIdle() {
-		return idle;
+	public Optional<Long> getIdle() {
+		return Optional.ofNullable(idle);
 	}
 
 	public void setIdle(long idle) {
 		this.idle = idle;
 	}
 
-	public long getIowait() {
-		return iowait;
+	public Optional<Long> getIowait() {
+		return Optional.ofNullable(iowait);
 	}
 
 	public void setIowait(long iowait) {
 		this.iowait = iowait;
 	}
 
-	public long getIrq() {
-		return irq;
+	public Optional<Long> getIrq() {
+		return Optional.ofNullable(irq);
 	}
 
 	public void setIrq(long irq) {
 		this.irq = irq;
 	}
 
-	public long getSoftirq() {
-		return softirq;
+	public Optional<Long> getSoftirq() {
+		return Optional.ofNullable(softirq);
 	}
 
 	public void setSoftirq(long softirq) {
 		this.softirq = softirq;
 	}
 
-	public long getSteal() {
-		return steal;
+	public Optional<Long> getSteal() {
+		return Optional.ofNullable(steal);
 	}
 
 	public void setSteal(long steal) {
 		this.steal = steal;
 	}
 
-	public long getGuest() {
-		return guest;
+	public Optional<Long> getGuest() {
+		return Optional.ofNullable(guest);
 	}
 
 	public void setGuest(long guest) {

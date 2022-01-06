@@ -27,7 +27,7 @@ public class Main {
         ProcStat procStat = null;
         try {
             procStat = new ProcStat();
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -86,7 +86,7 @@ public class Main {
                 .append(String.valueOf(systemBean.getSystemCpuLoad()))
                 .append(System.lineSeparator());
 
-        for(int j = 0; j < 16; j++) {
+        for(int j = 0; j < procStat.getCpuCoresCount(); j++) {
             sb.append("CPU")
                     .append(j)
                     .append(": ")

@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,8 +28,10 @@ import java.util.stream.Stream;
  */
 public class ProcStat {
 
+	/**
+	 * Absolute path to the "proc/stat" file.
+	 */
 	public static final String SYS_FILE_PATH = "/proc/stat";
-
 
 	/**
 	 * Number of logical CPU cores. Calculated by counting rows in stat file
@@ -133,10 +137,17 @@ public class ProcStat {
 	 *             numeric value pair.
 	 * @return  Parsed value.
 	 */
-	private long parseSingleValueLine(String line) {
+	private Optional<Long> parseSingleValueLine(String line) {
 		List<String> fields = Arrays.asList(line.split(" "));
+		Long parsedVal = null;
 
-		return Long.parseLong(fields.get(1));
+		try {
+			parsedVal = Long.parseLong(fields.get(1));
+		} catch (NumberFormatException e) {
+//			TODO: Logg parsing error.
+		}
+
+		return Optional.ofNullable(parsedVal);
 	}
 
 
@@ -214,20 +225,30 @@ public class ProcStat {
 		reader.readLine();
 
 		//  Total number of context switches since boot.
-		this.contextSwitchesCount = parseSingleValueLine(reader.readLine());
+		parseSingleValueLine(reader.readLine())
+				.ifPresent((val)->{ this.contextSwitchesCount = val; });
+//		this.contextSwitchesCount = parseSingleValueLine(reader.readLine());
 
 		//  Time of boot.
-		long bootTimeEpoch = parseSingleValueLine(reader.readLine());
-		this.bootTime = Instant.ofEpochSecond(bootTimeEpoch);
+		parseSingleValueLine(reader.readLine())
+				.ifPresent((val)->{ this.bootTime = Instant.ofEpochSecond(val); });
+//		long bootTimeEpoch = parseSingleValueLine(reader.readLine());
+//		this.bootTime = Instant.ofEpochSecond(bootTimeEpoch);
 
 		//  Total number of processes created since boot.
-		this.processesCreated = parseSingleValueLine(reader.readLine());
+		parseSingleValueLine(reader.readLine())
+				.ifPresent((val)->{ this.processesCreated = val; });
+//		this.processesCreated = parseSingleValueLine(reader.readLine());
 
 		//  Number of currently running processes.
-		this.processesRunning = parseSingleValueLine(reader.readLine());
+		parseSingleValueLine(reader.readLine())
+				.ifPresent((val)->{ this.processesRunning = val; });
+//		this.processesRunning = parseSingleValueLine(reader.readLine());
 
 		//  Number of processes currently being blocked on IO requests.
-		this.processesBlockedOnIo = parseSingleValueLine(reader.readLine());
+		parseSingleValueLine(reader.readLine())
+				.ifPresent((val)->{ this.processesBlockedOnIo = val; });
+//		this.processesBlockedOnIo = parseSingleValueLine(reader.readLine());
 
 		reader.close();
 	}

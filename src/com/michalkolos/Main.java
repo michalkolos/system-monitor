@@ -44,9 +44,9 @@ public class Main {
                 e.printStackTrace();
             }
 
-//            procStatPrint(systemBean, procStat);
-//            cpuFreqPrint(cpuFrequency);
-            System.out.println(hwmonExplorrer.allSubsystemsToString());
+            procStatPrint(systemBean, procStat);
+            cpuFreqPrint(cpuFrequency);
+//            System.out.println(hwmonExplorrer.allSubsystemsToString());
 
 
             try {

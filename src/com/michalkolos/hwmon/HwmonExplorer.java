@@ -47,11 +47,55 @@ public class HwmonExplorer {
 
 	private void fillSubsystemFields() throws IOException {
 
+		FileFilter filter = File::isFile;
+
+		for(HwmonSubsystem subsystem : subsystems.values()) {
+			List<String> fields = Optional.ofNullable(subsystem.getDir()).
+
+
+			Optional<String> dir = Optional.ofNullable(subsystem.getDir());
+
+
+
+
+		}
+
+
+		subsystems.values().stream().forEach((HwmonSubsystem subsytem) -> {
+			Optional.ofNullable(subsystem.getDir())
+					.ifPresent((File dir) -> {
+						Optional.ofNullable(dir.listFiles(filter)).stream().forEach(
+								(File fieldFile) -> {
+									Utils::extractStringFromFileOptional(fieldFile).
+
+									fieldFile
+								}
+								)
+								.map(Utils::extractStringFromFileOptional)
+								.map(s -> subsystem.getFields().put(fieldFile.getName(), new HwmonField(fieldFile, s));
+					});
+
+		});
+
+
+					]
+					.map(Utils::extractStringFromFileOptional)
+					.map(s -> subsystem.getFields().put(fieldFile.getName(), new HwmonField(fieldFile, s));
+		});
+
+
+
+
 		for(HwmonSubsystem subsystem : subsystems.values()) {
 			FileFilter filter = File::isFile;
 
 			for(File fieldFile : Objects.requireNonNull(
 					subsystem.getDir().listFiles(filter))) {
+
+				Utils.extractStringFromFileOptional(fieldFile).ifPresent(s -> {
+					subsystem.getFields().put(fieldFile.getName(), new HwmonField(fieldFile, s));
+				});
+
 
 				String fieldVal = Utils.extractStringFromFile(fieldFile);
 				subsystem.getFields().put(fieldFile.getName(), new HwmonField(fieldFile, fieldVal));

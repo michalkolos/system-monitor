@@ -13,7 +13,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.*;
 
-public class HwmonExplorrer {
+public class HwmonExplorer {
 
 	public static final String HWMON_PATH = "/sys/class/hwmon/";
 	public static final String NAME_FILE = "/name";
@@ -23,7 +23,7 @@ public class HwmonExplorrer {
 	private final Map<String, HwmonSubsystem> subsystems = new HashMap<>();
 
 
-	public HwmonExplorrer() {
+	public HwmonExplorer() {
 		scan();
 	}
 

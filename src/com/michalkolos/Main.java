@@ -5,8 +5,9 @@
 package com.michalkolos;
 
 import com.michalkolos.cpu.CpuFrequency;
+import com.michalkolos.cpu.CpuTemp;
 import com.michalkolos.cpu.ProcStat;
-import com.michalkolos.hwmon.HwmonExplorrer;
+import com.michalkolos.hwmon.HwmonExplorer;
 import com.sun.management.OperatingSystemMXBean;
 
 import java.io.IOException;
@@ -32,7 +33,8 @@ public class Main {
 
 
         CpuFrequency cpuFrequency = new CpuFrequency();
-        HwmonExplorrer hwmonExplorrer = new HwmonExplorrer();
+        CpuTemp cpuTemp = new CpuTemp();
+//        HwmonExplorer hwmonExplorrer = new HwmonExplorer();
 
         for(int i = 0; i < 100; i++) {
 
@@ -43,9 +45,14 @@ public class Main {
                 e.printStackTrace();
             }
 
-            procStatPrint(systemBean, procStat);
-            cpuFreqPrint(cpuFrequency);
-//            System.out.println(hwmonExplorrer.allSubsystemsToString());
+//            procStatPrint(systemBean, procStat);
+//            cpuFreqPrint(cpuFrequency);
+
+            System.out.print("CPU temp:");
+            System.out.println(cpuTemp.checkTemp().orElse(-1F));
+
+//            cpuTemp.checkTemp().ifPresent(System.out::println);
+
 
 
             try {

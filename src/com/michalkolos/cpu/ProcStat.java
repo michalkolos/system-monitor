@@ -8,17 +8,10 @@ import com.michalkolos.cpu.data.CpuCoreTimes;
 import com.michalkolos.cpu.data.CpuCoreUsageDetails;
 import com.michalkolos.input.SourceFile;
 
-import javax.xml.transform.Source;
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.logging.Logger;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -117,24 +110,32 @@ public class ProcStat {
 	 * @param line One line from the "proc/stat" file begging with "cpu".
 	 * @return Parsed data from every column in the line.
 	 */
-	private CpuCoreTimes parseCpuLine(String line) {
+	private Optional<CpuCoreTimes> parseCpuLine(String line) {
+		Optional<CpuCoreTimes> parsedDataOptional = Optional.empty();
+
 		List<String> fields = Arrays.asList(line.split(" +"));
-
-		CpuCoreTimes parsedData = new CpuCoreTimes();
-
 		if(fields.size() >= 10) {
-			parsedData.setUser(Long.parseLong(fields.get(1)));
-			parsedData.setNice(Long.parseLong(fields.get(2)));
-			parsedData.setSystem(Long.parseLong(fields.get(3)));
-			parsedData.setIdle(Long.parseLong(fields.get(4)));
-			parsedData.setIowait(Long.parseLong(fields.get(5)));
-			parsedData.setIrq(Long.parseLong(fields.get(6)));
-			parsedData.setSoftirq(Long.parseLong(fields.get(7)));
-			parsedData.setSteal(Long.parseLong(fields.get(8)));
-			parsedData.setGuest(Long.parseLong(fields.get(9)));
+			try{
+				CpuCoreTimes parsedData = new CpuCoreTimes();
+
+				parsedData.setUser(Long.parseLong(fields.get(1)));
+				parsedData.setNice(Long.parseLong(fields.get(2)));
+				parsedData.setSystem(Long.parseLong(fields.get(3)));
+				parsedData.setIdle(Long.parseLong(fields.get(4)));
+				parsedData.setIowait(Long.parseLong(fields.get(5)));
+				parsedData.setIrq(Long.parseLong(fields.get(6)));
+				parsedData.setSoftirq(Long.parseLong(fields.get(7)));
+				parsedData.setSteal(Long.parseLong(fields.get(8)));
+				parsedData.setGuest(Long.parseLong(fields.get(9)));
+
+				parsedDataOptional = Optional.of(parsedData);
+			} catch (NumberFormatException e) {
+				e.printStackTrace();
+//				TODO: Logging
+			}
 		}
 
-		return parsedData;
+		return parsedDataOptional;
 	}
 
 
@@ -171,6 +172,8 @@ public class ProcStat {
 
 		long previousIdle = previous.getIdle() + previous.getIowait();
 		long currentIdle = current.getIdle() + current.getIowait();
+
+
 
 		long previousNonIdle = previous.getUser() + previous.getNice()
 				+ previous.getSystem() + previous.getIrq()
@@ -212,53 +215,58 @@ public class ProcStat {
 	 * @throws IOException Exception thrown when the accessed file is
 	 * unavailable.
 	 */
-	public void dataAcquisitionLoop() throws IOException{
+	public void dataAcquisition() throws IOException{
 
-		BufferedReader reader = new BufferedReader(new FileReader(SYS_FILE_PATH));
+		List<String> statLines = statFile.readLines();
+		//  Check if stat file contains enough lines:
+		if(statLines.size() < this.cpuCoresCount + 7) { return; }
+
+		ListIterator<String> linesIterator = statLines.listIterator();
 
 		//  Total CPU usage.
-		CpuCoreTimes currentCpuCoreTimes = parseCpuLine(reader.readLine());
-		this.totalCpuUsage = calculateCpuUsage(this.previousTotalTimes, currentCpuCoreTimes);
-
-		this.previousTotalTimes = currentCpuCoreTimes;
+		parseCpuLine(linesIterator.next()).ifPresent(current -> {
+			this. totalCpuUsage = calculateCpuUsage(this.previousTotalTimes, current);
+		});
 
 		//  CPU usage per core.
 		for(int i = 0; i < cpuCoresCount; i++) {
-			currentCpuCoreTimes = parseCpuLine(reader.readLine());
-			this.coreCpuUsage.set(i, calculateCpuUsage(this.previousCoreTimes.get(i), currentCpuCoreTimes));
-			this.previousCoreTimes.set(i, currentCpuCoreTimes);
+			Optional<CpuCoreTimes> currentCpuCoreTimes = parseCpuLine(linesIterator.next());
+			if(currentCpuCoreTimes.isPresent()) {
+				this.coreCpuUsage.set(i, calculateCpuUsage(
+						this.previousCoreTimes.get(i), currentCpuCoreTimes.get()));
+
+				this.previousCoreTimes.set(i, currentCpuCoreTimes.get());			}
 		}
 
+
 		//  System interrupts section - not recorded.
-		reader.readLine();
+		linesIterator.next();
 
 		//  Total number of context switches since boot.
-		parseSingleValueLine(reader.readLine())
+		parseSingleValueLine(linesIterator.next())
 				.ifPresent((val)->{ this.contextSwitchesCount = val; });
 //		this.contextSwitchesCount = parseSingleValueLine(reader.readLine());
 
 		//  Time of boot.
-		parseSingleValueLine(reader.readLine())
+		parseSingleValueLine(linesIterator.next())
 				.ifPresent((val)->{ this.bootTime = Instant.ofEpochSecond(val); });
 //		long bootTimeEpoch = parseSingleValueLine(reader.readLine());
 //		this.bootTime = Instant.ofEpochSecond(bootTimeEpoch);
 
 		//  Total number of processes created since boot.
-		parseSingleValueLine(reader.readLine())
+		parseSingleValueLine(linesIterator.next())
 				.ifPresent((val)->{ this.processesCreated = val; });
 //		this.processesCreated = parseSingleValueLine(reader.readLine());
 
 		//  Number of currently running processes.
-		parseSingleValueLine(reader.readLine())
+		parseSingleValueLine(linesIterator.next())
 				.ifPresent((val)->{ this.processesRunning = val; });
 //		this.processesRunning = parseSingleValueLine(reader.readLine());
 
 		//  Number of processes currently being blocked on IO requests.
-		parseSingleValueLine(reader.readLine())
+		parseSingleValueLine(linesIterator.next())
 				.ifPresent((val)->{ this.processesBlockedOnIo = val; });
 //		this.processesBlockedOnIo = parseSingleValueLine(reader.readLine());
-
-		reader.close();
 	}
 
 

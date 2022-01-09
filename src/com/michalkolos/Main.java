@@ -9,7 +9,6 @@ import com.michalkolos.cpu.ProcStat;
 import com.michalkolos.hwmon.HwmonExplorrer;
 import com.sun.management.OperatingSystemMXBean;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.lang.management.ManagementFactory;
@@ -38,7 +37,7 @@ public class Main {
         for(int i = 0; i < 100; i++) {
 
             try {
-                procStat.dataAcquisitionLoop();
+                procStat.dataAcquisition();
                 cpuFrequency.dataAcquisitionLoop();
             } catch (IOException e) {
                 e.printStackTrace();

@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
- * Gathers processor temperature data from various system files.
+ * Gathers processor temperature data as reported by the system.
  */
 public class CpuTemp {
 

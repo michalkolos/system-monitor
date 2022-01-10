@@ -27,86 +27,47 @@ public class HwmonExplorer {
 		scan();
 	}
 
-	private void listSubsystems() throws IOException {
+	private void listSubsystems() {
 		File hwmonDir = new File(HWMON_PATH);
 
 		FileFilter filter = file -> file.isDirectory() &&
 				file.getName().matches("hwmon[0-9]+");
 
-		File[] subsystemDirs = hwmonDir.listFiles(filter);
+		List<File> subsystemDirs = Optional.ofNullable(hwmonDir.listFiles(filter))
+				.map(Arrays::asList)
+				.orElse(new ArrayList<>());
 
-		if (subsystemDirs != null) {
+		for(File dir : subsystemDirs) {
+			File nameFile = new File(dir.getAbsolutePath() + NAME_FILE);
 
-			for (File dir : subsystemDirs) {
-				String name = Utils.extractStringFromFile(
-						new File(dir.getAbsolutePath() + NAME_FILE));
+			Utils.extractStringFromFileOptional(nameFile).ifPresent(name -> {
 				subsystems.put(name, new HwmonSubsystem(dir, name));
-			}
+			});
 		}
 	}
 
-	private void fillSubsystemFields() throws IOException {
+	private void scanSubsystemFields() throws IOException {
 
 		FileFilter filter = File::isFile;
 
 		for(HwmonSubsystem subsystem : subsystems.values()) {
-			List<String> fields = Optional.ofNullable(subsystem.getDir()).
+			List<File> fieldFiles = Optional.ofNullable(subsystem.getDir())
+					.map(Utils::listDirectoryFiles)
+					.orElse(new ArrayList<>());
 
-
-			Optional<String> dir = Optional.ofNullable(subsystem.getDir());
-
-
-
-
-		}
-
-
-		subsystems.values().stream().forEach((HwmonSubsystem subsytem) -> {
-			Optional.ofNullable(subsystem.getDir())
-					.ifPresent((File dir) -> {
-						Optional.ofNullable(dir.listFiles(filter)).stream().forEach(
-								(File fieldFile) -> {
-									Utils::extractStringFromFileOptional(fieldFile).
-
-									fieldFile
-								}
-								)
-								.map(Utils::extractStringFromFileOptional)
-								.map(s -> subsystem.getFields().put(fieldFile.getName(), new HwmonField(fieldFile, s));
-					});
-
-		});
-
-
-					]
-					.map(Utils::extractStringFromFileOptional)
-					.map(s -> subsystem.getFields().put(fieldFile.getName(), new HwmonField(fieldFile, s));
-		});
-
-
-
-
-		for(HwmonSubsystem subsystem : subsystems.values()) {
-			FileFilter filter = File::isFile;
-
-			for(File fieldFile : Objects.requireNonNull(
-					subsystem.getDir().listFiles(filter))) {
-
-				Utils.extractStringFromFileOptional(fieldFile).ifPresent(s -> {
-					subsystem.getFields().put(fieldFile.getName(), new HwmonField(fieldFile, s));
+			fieldFiles.forEach(file -> {
+				Utils.extractStringFromFileOptional(file).ifPresent(s -> {
+					subsystem.getFields()
+							.put(file.getName(), new HwmonField(file, s));
 				});
-
-
-				String fieldVal = Utils.extractStringFromFile(fieldFile);
-				subsystem.getFields().put(fieldFile.getName(), new HwmonField(fieldFile, fieldVal));
-			}
+			});
 		}
 	}
 
 	private void scan() {
 		try {
 			listSubsystems();
-			fillSubsystemFields();
+			scanSubsystemFields();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

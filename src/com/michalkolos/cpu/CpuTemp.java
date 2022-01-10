@@ -18,7 +18,9 @@ import java.util.Optional;
 public class CpuTemp {
 
 //	public static final String THERMAL_SUBSYSTEM = "cpu_thermal";
-	public static final String THERMAL_SUBSYSTEM = "coretemp";
+//	public static final String THERMAL_SUBSYSTEM = "coretemp";
+	public static final String THERMAL_SUBSYSTEM = "k10temp";
+
 	public static final String THERMAL_FIELD = "temp1_input";
 
 	private final HwmonExplorer hwmonExplorer = new HwmonExplorer();

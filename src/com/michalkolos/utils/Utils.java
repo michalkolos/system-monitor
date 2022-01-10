@@ -7,6 +7,7 @@ package com.michalkolos.utils;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,8 +25,6 @@ public class Utils {
 		try {
 			InputStream inputStream = new FileInputStream(file);
 			output = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -44,10 +43,11 @@ public class Utils {
 
 	public static List<File> listDirectoryFiles(File dirFile) {
 		FileFilter filter = File::isFile;
-		List<File> subFileList = Optional.ofNullable(dirFile)
+
+		return Optional.ofNullable(dirFile)
 				.map(f -> f.listFiles(filter))
-				.map(Arrays::to)
-				.or(new ArrayList<File>());
+				.map(Arrays::asList)
+				.orElse(new ArrayList<File>());
 	}
 
 }

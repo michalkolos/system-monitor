@@ -7,7 +7,6 @@ package com.michalkolos;
 import com.michalkolos.cpu.CpuFrequency;
 import com.michalkolos.cpu.CpuTemp;
 import com.michalkolos.cpu.ProcStat;
-import com.michalkolos.hwmon.HwmonExplorer;
 import com.sun.management.OperatingSystemMXBean;
 
 import java.io.IOException;

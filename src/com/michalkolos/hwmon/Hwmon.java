@@ -13,7 +13,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.*;
 
-public class HwmonExplorer {
+public class Hwmon {
 
 	public static final String HWMON_PATH = "/sys/class/hwmon/";
 	public static final String NAME_FILE = "/name";
@@ -23,7 +23,7 @@ public class HwmonExplorer {
 	private final Map<String, HwmonSubsystem> subsystems = new HashMap<>();
 
 
-	public HwmonExplorer() {
+	public Hwmon() {
 		scan();
 	}
 
@@ -40,27 +40,21 @@ public class HwmonExplorer {
 		for(File dir : subsystemDirs) {
 			File nameFile = new File(dir.getAbsolutePath() + NAME_FILE);
 
-			Utils.extractStringFromFileOptional(nameFile).ifPresent(name -> {
-				subsystems.put(name, new HwmonSubsystem(dir, name));
-			});
+			Utils.extractStringFromFileOptional(nameFile).ifPresent(name ->
+					subsystems.put(name, new HwmonSubsystem(dir, name)));
 		}
 	}
 
 	private void scanSubsystemFields() throws IOException {
-
-		FileFilter filter = File::isFile;
 
 		for(HwmonSubsystem subsystem : subsystems.values()) {
 			List<File> fieldFiles = Optional.ofNullable(subsystem.getDir())
 					.map(Utils::listDirectoryFiles)
 					.orElse(new ArrayList<>());
 
-			fieldFiles.forEach(file -> {
-				Utils.extractStringFromFileOptional(file).ifPresent(s -> {
-					subsystem.getFields()
-							.put(file.getName(), new HwmonField(file, s));
-				});
-			});
+			fieldFiles.forEach(file ->
+				Utils.extractStringFromFileOptional(file).ifPresent(s ->
+					subsystem.getFields().put(file.getName(), new HwmonField(file, s))));
 		}
 	}
 
@@ -83,13 +77,13 @@ public class HwmonExplorer {
 					.append(": ")
 					.append(System.lineSeparator());
 
-			subsystem.getFields().forEach((String fieldName, HwmonField field) -> {
+			subsystem.getFields().forEach((String fieldName, HwmonField field) ->
 				sb.append("\t")
 						.append(fieldName)
 						.append(FIELD_NAME_TAB.repeat(Math.max(0, FIELD_NAME_MAX_LEN - fieldName.length())))
 						.append(field.getValue())
-						.append(System.lineSeparator());
-			});
+						.append(System.lineSeparator())
+			);
 
 			sb.append(System.lineSeparator());
 		}
@@ -99,9 +93,7 @@ public class HwmonExplorer {
 
 	public String allSubsystemsToString() {
 		StringBuilder sb = new StringBuilder();
-		subsystems.keySet().forEach(key-> {
-			sb.append(subsystemToString(key));
-		});
+		subsystems.keySet().forEach(key -> sb.append(subsystemToString(key)));
 
 		return sb.toString();
 	}

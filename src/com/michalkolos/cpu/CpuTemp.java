@@ -4,12 +4,10 @@
 
 package com.michalkolos.cpu;
 
-import com.michalkolos.hwmon.HwmonExplorer;
+import com.michalkolos.hwmon.Hwmon;
 import com.michalkolos.utils.Utils;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Optional;
 
 /**
@@ -23,13 +21,13 @@ public class CpuTemp {
 
 	public static final String THERMAL_FIELD = "temp1_input";
 
-	private final HwmonExplorer hwmonExplorer = new HwmonExplorer();
+	private final Hwmon hwmon = new Hwmon();
 	private final File tempField;
 
 
 
 	public CpuTemp() {
-		tempField = hwmonExplorer.getFieldFile(THERMAL_SUBSYSTEM, THERMAL_FIELD);
+		tempField = hwmon.getFieldFile(THERMAL_SUBSYSTEM, THERMAL_FIELD);
 	}
 
 	public Optional<Float> checkTemp() {

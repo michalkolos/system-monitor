@@ -4,8 +4,6 @@
 
 package com.michalkolos.hwmon;
 
-import com.michalkolos.hwmon.data.HwmonField;
-import com.michalkolos.hwmon.data.HwmonSubsystem;
 import com.michalkolos.utils.Utils;
 
 import java.io.File;

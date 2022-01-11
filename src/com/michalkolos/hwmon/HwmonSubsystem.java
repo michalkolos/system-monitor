@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2021 by Michal Kolosowski.
+ * Copyright (c) 2021-2022 by Michal Kolosowski.
  */
 
-package com.michalkolos.hwmon.data;
+package com.michalkolos.hwmon;
 
 import com.michalkolos.utils.Utils;
 

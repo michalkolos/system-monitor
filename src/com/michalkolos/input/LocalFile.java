@@ -10,21 +10,21 @@ import java.util.List;
  * Represents file asset that can be read in its entirety as a string or as a
  * List of strings, where each string represents one line of the file.
  */
-public class SourceFile {
+public class LocalFile {
 	private File file;
 
 
 	/**
 	 * @param path Absolute path to the file.
 	 */
-	public SourceFile(String path) {
+	public LocalFile(String path) {
 		file = new File(path);
 	}
 
 	/**
 	 * @param file File to be read.
 	 */
-	public SourceFile(File file) {
+	public LocalFile(File file) {
 		this.file = file;
 	}
 

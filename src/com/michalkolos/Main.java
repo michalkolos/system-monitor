@@ -32,7 +32,12 @@ public class Main {
 
 
         CpuFrequency cpuFrequency = new CpuFrequency();
-        CpuTemp cpuTemp = new CpuTemp();
+        CpuTemp cpuTemp = null;
+        try {
+            cpuTemp = new CpuTemp();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 //        HwmonExplorer hwmonExplorrer = new HwmonExplorer();
 
         for(int i = 0; i < 100; i++) {

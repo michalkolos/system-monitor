@@ -6,7 +6,7 @@ package com.michalkolos.cpu;
 
 import com.michalkolos.cpu.data.CpuCoreTimes;
 import com.michalkolos.cpu.data.CpuCoreUsageDetails;
-import com.michalkolos.input.SourceFile;
+import com.michalkolos.input.LocalFile;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,7 +29,7 @@ public class ProcStat {
 	 */
 	public static final String SYS_FILE_PATH = "/proc/stat";
 
-	private final SourceFile statFile;
+	private final LocalFile statFile;
 
 	/**
 	 * Number of logical CPU cores. Calculated by counting rows in stat file
@@ -68,7 +68,7 @@ public class ProcStat {
 
 
 	public ProcStat() throws IOException {
-		this.statFile = new SourceFile(SYS_FILE_PATH);
+		this.statFile = new LocalFile(SYS_FILE_PATH);
 		List<String> statFileLines = statFile.readLines();
 
 		this.cpuCoresCount = countCores(statFileLines);

@@ -16,7 +16,7 @@ import java.util.*;
 public class Hwmon {
 
 	public static final String HWMON_PATH = "/sys/class/hwmon/";
-	public static final String NAME_FILE = "/name";
+
 	public static final int FIELD_NAME_MAX_LEN = 40;
 	public static final String FIELD_NAME_TAB = ".";
 
@@ -24,10 +24,10 @@ public class Hwmon {
 
 
 	public Hwmon() {
-		scan();
+		scanSubsystems();
 	}
 
-	private void listSubsystems() {
+	private void scanSubsystems() {
 		File hwmonDir = new File(HWMON_PATH);
 
 		FileFilter filter = file -> file.isDirectory() &&
@@ -37,35 +37,76 @@ public class Hwmon {
 				.map(Arrays::asList)
 				.orElse(new ArrayList<>());
 
-		for(File dir : subsystemDirs) {
-			File nameFile = new File(dir.getAbsolutePath() + NAME_FILE);
-
-			Utils.extractStringFromFileOptional(nameFile).ifPresent(name ->
-					subsystems.put(name, new HwmonSubsystem(dir, name)));
+		for (File subsystemDir : subsystemDirs) {
+			try {
+				HwmonSubsystem extractedSubsystem = new HwmonSubsystem(subsystemDir);
+				subsystems.put(extractedSubsystem.getName(), extractedSubsystem);
+			} catch (IOException e) {
+				e.printStackTrace();
+//				TODO: LOG subsystem access error.
+			}
 		}
+
+//      TODO: delete bellow:
+//		for(File dir : subsystemDirs) {
+//			File nameFile = new File(dir.getAbsolutePath() + NAME_FILE);
+//
+//			Utils.extractStringFromFileOptional(nameFile).ifPresent(name ->
+//					subsystems.put(name, new HwmonSubsystem(dir, name)));
+//		}
 	}
 
-	private void scanSubsystemFields() throws IOException {
 
-		for(HwmonSubsystem subsystem : subsystems.values()) {
-			List<File> fieldFiles = Optional.ofNullable(subsystem.getDir())
-					.map(Utils::listDirectoryFiles)
-					.orElse(new ArrayList<>());
 
-			fieldFiles.forEach(file ->
-				Utils.extractStringFromFileOptional(file).ifPresent(s ->
-					subsystem.getFields().put(file.getName(), new HwmonField(file, s))));
-		}
+
+
+	public Set<String> getSubsystemNames() {
+		return subsystems.keySet();
 	}
 
-	private void scan() {
-		try {
-			listSubsystems();
-			scanSubsystemFields();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public Optional<Set<String>> getFieldNamesOptional(String subsystemName) {
+		return Optional.ofNullable(subsystems.get(subsystemName))
+				.map(HwmonSubsystem::getFields)
+				.map(Map::keySet);
 	}
+
+//  TODO: Delete bellow:
+//	public String getFieldValue(String subsystemName, String fieldName) {
+//		HwmonSubsystem subsystem = subsystems.get(subsystemName);
+//		String fieldVal = null;
+//
+//		if(subsystem != null) {
+//			fieldVal = subsystem.getFields().get(fieldName).getValue();
+//		}
+//
+//		return fieldVal;
+//	}
+
+	public Optional<String> getFiledValueOptional (String subsystemName, String fieldName) {
+		return getFieldFileOptional(subsystemName, fieldName)
+				.flatMap(Utils::extractStringFromFileOptional);
+	}
+
+	public Optional<File> getFieldFileOptional(String subsystemName, String fieldName) {
+		return getSubsystemOptional(subsystemName)
+				.map(subsystem -> subsystem.getFields().get(fieldName));
+	}
+
+	public Optional<HwmonSubsystem> getSubsystemOptional (String subsystemName) {
+		return Optional.ofNullable(subsystems.get(subsystemName));
+	}
+
+//	TODO: Delete bellow:
+//	public File getFieldFile(String subsystemName, String fieldName) {
+//		HwmonSubsystem subsystem = subsystems.get(subsystemName);
+//		File fieldFile = null;
+//
+//		if(subsystem != null) {
+//			fieldFile = subsystem.getFields().get(fieldName).getFile();
+//		}
+//
+//		return fieldFile;
+//	}
 
 
 	public String subsystemToString(String name) {
@@ -77,12 +118,12 @@ public class Hwmon {
 					.append(": ")
 					.append(System.lineSeparator());
 
-			subsystem.getFields().forEach((String fieldName, HwmonField field) ->
-				sb.append("\t")
-						.append(fieldName)
-						.append(FIELD_NAME_TAB.repeat(Math.max(0, FIELD_NAME_MAX_LEN - fieldName.length())))
-						.append(field.getValue())
-						.append(System.lineSeparator())
+			subsystem.getFields().forEach((String fieldName, File fieldFile) ->
+					sb.append("\t")
+							.append(fieldName)
+							.append(FIELD_NAME_TAB.repeat(Math.max(0, FIELD_NAME_MAX_LEN - fieldName.length())))
+							.append(Utils.extractStringFromFileOptional(fieldFile).orElse("ERROR"))
+							.append(System.lineSeparator())
 			);
 
 			sb.append(System.lineSeparator());
@@ -96,43 +137,5 @@ public class Hwmon {
 		subsystems.keySet().forEach(key -> sb.append(subsystemToString(key)));
 
 		return sb.toString();
-	}
-
-	public Set<String> getSubsystemNames() {
-		return subsystems.keySet();
-	}
-
-	public Set<String> getFieldNames(String subsystemName) {
-		Set<String> fieldNames = new HashSet<>();
-
-		HwmonSubsystem subsystem = subsystems.get(subsystemName);
-		if(subsystem != null) {
-			fieldNames = subsystem.getFields()
-					.keySet();
-		}
-
-		return fieldNames;
-	}
-
-	public String getFieldValue(String subsystemName, String fieldName) {
-		HwmonSubsystem subsystem = subsystems.get(subsystemName);
-		String fieldVal = null;
-
-		if(subsystem != null) {
-			fieldVal = subsystem.getFields().get(fieldName).getValue();
-		}
-
-		return fieldVal;
-	}
-
-	public File getFieldFile(String subsystemName, String fieldName) {
-		HwmonSubsystem subsystem = subsystems.get(subsystemName);
-		File fieldFile = null;
-
-		if(subsystem != null) {
-			fieldFile = subsystem.getFields().get(fieldName).getFile();
-		}
-
-		return fieldFile;
 	}
 }

@@ -15,6 +15,10 @@ import java.util.*;
  * Class representing a subsystem provided by Hwmon api.
  */
 public class HwmonSubsystem {
+
+	/**
+	 * Path filename of the "name" file that contains the name of the subsystem.
+	 */
 	public static final String NAME_FILE = "/name";
 
 	private final File dir;
@@ -23,7 +27,7 @@ public class HwmonSubsystem {
 
 
 	/**
-	 * @param dir Base directory of the subsystem.
+	 * @param dir File object representing base directory of the subsystem.
 	 */
 	public HwmonSubsystem(File dir) throws IOException {
 		this.dir = dir;
@@ -32,12 +36,24 @@ public class HwmonSubsystem {
 	}
 
 
+	/**
+	 *  Get subsystem's name from the "name" file
+	 * @param dir File object representing base directory of the subsystem.
+	 * @return  The name of the subsystem
+	 * @throws IOException  Thrown when the "name" file is inaccessible.
+	 */
 	private String extractName(File dir) throws IOException {
 		File nameFile = new File(dir.getAbsolutePath() + NAME_FILE);
 
 		return Utils.extractStringFromFile(nameFile);
 	}
 
+
+	/**
+	 * Scans files in subsystem's directory to extract fields.
+	 * @param dir File object representing base directory of the subsystem.
+	 * @return Returns map of field names and their corresponding files.
+	 */
 	private Map<String, File> extractFields(File dir) {
 		Map<String, File> fields = new HashMap<>();
 		Utils.listDirectoryFiles(dir).forEach(file -> fields.put(file.getName(), file));
@@ -46,9 +62,16 @@ public class HwmonSubsystem {
 	}
 
 
+	/**
+	 * Returns a system file that represents given field of the subsystem.
+	 * @param fieldName Filename of the field to be returned.
+	 * @return File object of the field wrapped in an Optional. Optional will be
+	 * empty if the field with a given name does not exist.
+	 */
 	public Optional<File> getFieldFile(String fieldName) {
 		return Optional.ofNullable(fields.get(fieldName));
 	}
+
 
 	public Optional<String> getFieldValue(String fieldName) {
 		return getFieldFile(fieldName)

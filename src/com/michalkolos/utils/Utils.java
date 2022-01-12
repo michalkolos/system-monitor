@@ -44,10 +44,14 @@ public class Utils {
 	public static List<File> listDirectoryFiles(File dirFile) {
 		FileFilter filter = File::isFile;
 
+		return listDirectoryFiles(dirFile, filter);
+	}
+
+	public static List<File> listDirectoryFiles(File dirFile, FileFilter filter) {
+
 		return Optional.ofNullable(dirFile)
 				.map(f -> f.listFiles(filter))
 				.map(Arrays::asList)
 				.orElse(new ArrayList<File>());
 	}
-
 }

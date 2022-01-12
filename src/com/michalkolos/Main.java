@@ -10,6 +10,7 @@ import com.michalkolos.cpu.ProcStat;
 import com.sun.management.OperatingSystemMXBean;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.lang.management.ManagementFactory;
 
@@ -23,67 +24,33 @@ public class Main {
                 (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
 
 
-        ProcStat procStat = null;
+
         try {
-            procStat = new ProcStat();
+            ProcStat procStat = new ProcStat();
+            CpuFrequency cpuFrequency = new CpuFrequency();
+            CpuTemp cpuTemp = new CpuTemp();
+
+            for(int i = 0; i < 100; i++) {
+                System.out.println(cpuFrequency.toString());
+                System.out.println(System.lineSeparator());
+                System.out.println(cpuTemp.checkTemp().map(Objects::toString).orElse("NULL"));
+
+
+                System.out.println(System.lineSeparator());
+                System.out.println(System.lineSeparator());
+
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-
-        CpuFrequency cpuFrequency = new CpuFrequency();
-        CpuTemp cpuTemp = null;
-        try {
-            cpuTemp = new CpuTemp();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-//        HwmonExplorer hwmonExplorrer = new HwmonExplorer();
-
-        for(int i = 0; i < 100; i++) {
-
-            try {
-                procStat.dataAcquisition();
-                cpuFrequency.dataAcquisitionLoop();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-//            procStatPrint(systemBean, procStat);
-//            cpuFreqPrint(cpuFrequency);
-
-            System.out.print("CPU temp:");
-            System.out.println(cpuTemp.checkTemp().orElse(-1F));
-
-//            cpuTemp.checkTemp().ifPresent(System.out::println);
-
-
-
-            try {
-                TimeUnit.SECONDS.sleep(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-    }
-
-    private static void cpuFreqPrint(CpuFrequency cpuFrequency) {
-        StringBuilder sb = new StringBuilder();
-
-        for(int j = 0; j < cpuFrequency.getLogicalCores(); j++) {
-            sb.append("CPU").append(j)
-                    .append(": ")
-                    .append(cpuFrequency.getCoreFrequency(j))
-                    .append("MHz")
-                    .append(System.lineSeparator());
-        }
-
-        sb.append(System.lineSeparator())
-                .append("=============================================")
-                .append(System.lineSeparator());
-
-        System.out.println(sb.toString());
     }
 
 

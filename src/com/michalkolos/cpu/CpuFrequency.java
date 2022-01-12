@@ -4,12 +4,13 @@
 
 package com.michalkolos.cpu;
 
+import com.michalkolos.utils.Utils;
+
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
@@ -20,90 +21,96 @@ import java.util.List;
 public class CpuFrequency {
 
 	public static final String SYS_PATH = "/sys/devices/system/cpu";
-
-
-	/**
-	 * Number of CPU logical cores calculated by counting directories containing
-	 * CPU core data.
-	 */
-	private int logicalCores = 0;
+	public static final String FREQ_FILE_PATH_PART = "/cpufreq/scaling_cur_freq";
 
 	/**
 	 * List of directories containing CPU core data.
 	 */
-	private List<File> cpuDirs = new ArrayList<>();
+	private final List<File> coreFreqFiles;
+
+
+
+	public CpuFrequency() throws IOException {
+
+		this.coreFreqFiles = scanCoreDirs().stream()
+				.map(dir -> new File(dir.getAbsolutePath() + FREQ_FILE_PATH_PART))
+				.collect(Collectors.toList());
+	}
 
 
 	/**
-	 * List of parsed CPU core clock frequencies.
+	 * Scans "/sys/devices/system/cpu" directory for matching folders that
+	 * represent logical cores of the CPU.
+	 * @return List of File objects representing individual CPU core folders.
+	 * @throws IOException Thrown when "/sys/devices/system/cpu" is inaccessible.
 	 */
-	private final List<Integer> coreFrequencies;
+	private List<File> scanCoreDirs() throws IOException {
+		FileFilter filter = file -> file.isDirectory() && file.getName().matches("cpu[0-9]+");
 
-
-
-	public CpuFrequency() {
-		File sysDir = new File(SYS_PATH);
-
-		if(sysDir.exists() && sysDir.isDirectory()) {
-
-			///  Filter that looks for CPU core directories named as cpu<core_number>
-			FileFilter filter = file -> file.isDirectory() && file.getName().matches("cpu[0-9]+");
-
-			File[] files = sysDir.listFiles(filter);
-
-			if(files != null){
-				this.cpuDirs = Arrays.asList(files);
-			}
-
-			logicalCores = this.cpuDirs.size();
+		File dirFile = new File(SYS_PATH);
+		if (!dirFile.exists() || !dirFile.isDirectory()) {
+			throw new IOException("Cannot access " + SYS_PATH + " directory.");
 		}
 
-		this.coreFrequencies = new ArrayList<>(Collections.nCopies(logicalCores, 0));
+		return Utils.listDirectoryFiles(dirFile, filter);
 	}
 
 
 	/**
-	 * Method that needs to be called periodically  to gather current frequency
-	 * value. This data is provided by the system in separate "scaling_cur_freq"
-	 * files for each core.
-	 * @throws IOException Thrown when one of the 'scaling_cur_freq' files is
-	 * unavailable.
+	 * Returns number of CPU logical cores.
+	 * @return Number of CPU cores.
 	 */
-	public void dataAcquisitionLoop() throws IOException {
-		for(File dir : cpuDirs) {
-
-			File mhzFile = new File(dir.getAbsolutePath() + "/cpufreq/scaling_cur_freq");
-			InputStream inputStream = new FileInputStream(mhzFile);
-			String mhzText = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-
-			//  Parsing frequency data from string to number variable requires
-			//  removing trailing end of line ("\n") character.
-			int mhzNum = Integer.parseInt(mhzText.substring(0, mhzText.length() - 1));
-
-			//  Getting CPU core ID number from its folder name in
-			//  "/sys/devices/system/cpu" directory.
-			int coreNo = Integer.parseInt(dir.getName().substring(3));
-
-			coreFrequencies.set(coreNo, mhzNum);
-		}
-	}
-
-
-	public int getLogicalCores() {
-		return logicalCores;
+	public int getLogicalCoreNo() {
+		return coreFreqFiles.size();
 	}
 
 
 	/**
-	 * Returns most recent clock frequency value for a given logical core.
+	 * Returns current clock frequency value for a given logical core.
 	 * @param coreNo CPU core id number counting from 0.
-	 * @return Most recent CPU core frequency represented in MHz.
+	 * @return Most recent CPU core frequency represented in MHz. Returns 0 if
+	 * data cannot be read or core number is invalid.
 	 */
-	public int getCoreFrequency(int coreNo) {
-		if(coreNo >= 0 && coreNo < this.coreFrequencies.size()) {
-			return coreFrequencies.get(coreNo);
-		} else {
-			return 0;
+	public float getCoreFrequency(int coreNo) {
+		return getCoreFrequencyOptional(coreNo).orElse(0F);
+	}
+
+
+	/**
+	 * Returns current clock frequency value for a given logical core as an
+	 * Optional.
+	 * @param coreNo CPU core id number counting from 0.
+	 * @return Most recent CPU core frequency represented in MHz. Returns empty
+	 * Optional if data cannot be read or core number is invalid.
+	 */
+	public Optional<Float> getCoreFrequencyOptional(int coreNo) {
+		return Optional.ofNullable(coreFreqFiles.get(coreNo))
+				.flatMap(Utils::extractStringFromFileOptional)
+				.map(Float::parseFloat);
+	}
+
+
+	public String toStringCore(int coreNo) {
+
+		return "CPU" +
+				coreNo +
+				": " +
+				getCoreFrequencyOptional(coreNo)
+						.map(freq -> freq / 1000)
+						.map(Objects::toString)
+						.orElse("NULL ") +
+				" MHz" +
+				System.lineSeparator();
+	}
+
+
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+
+		for(int i = 0; i < coreFreqFiles.size(); i++) {
+			sb.append(toStringCore(i));
 		}
+
+		return sb.toString();
 	}
 }

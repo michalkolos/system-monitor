@@ -34,6 +34,8 @@ public class Main {
                 System.out.println(cpuFrequency.toString());
                 System.out.println(System.lineSeparator());
                 System.out.println(cpuTemp.checkTemp().map(Objects::toString).orElse("NULL"));
+                procStat.dataAcquisition();
+                procStatPrint(systemBean, procStat);
 
 
                 System.out.println(System.lineSeparator());

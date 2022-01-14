@@ -7,8 +7,6 @@ package com.michalkolos.cpu;
 import com.michalkolos.cpu.data.CpuCoreTimes;
 import com.michalkolos.cpu.data.CpuCoreUsageDetails;
 import com.michalkolos.input.LocalFile;
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
@@ -94,12 +92,10 @@ public class ProcStat {
 	 * Calculates number of logical cores by counting rows in stat file that
 	 * start with "cpu##" string.
 	 * @return Number of logical CPU cores.
-	 * @throws FileNotFoundException Thrown when "proc/stat" file in inaccessible.
 	 */
 	private int countCores(List<String> lines) {
-		lines = lines != null ? lines : new ArrayList<>();
-
-		return (int)lines.stream()
+		return (int)Optional.ofNullable(lines).orElse(new ArrayList<>())
+				.stream()
 				.filter((String line) -> line.matches("cpu[0-9]+.*"))
 				.count();
 	}
@@ -328,5 +324,67 @@ public class ProcStat {
 
 	public long getProcessesBlockedOnIo() {
 		return processesBlockedOnIo;
+	}
+
+
+
+
+	private String floatToPercent(float fraction) {
+		return String.format("%05.2f", fraction * 100);
+	}
+	private String intLeadingZeros(int number) {
+		return String.format("%02d", number);
+	}
+
+	public String coreStatsToString(CpuCoreUsageDetails usage) {
+		return floatToPercent(usage.getTotalUsage()) +
+				" (I/O: " +
+				floatToPercent(usage.getIoUsage()) +
+				", user: " +
+				floatToPercent(usage.getUserUsage()) +
+				", system: " +
+				floatToPercent(usage.getSystemUsage()) +
+				", soft IRQ: " +
+				floatToPercent(usage.getSoftIrqUsage()) +
+				", hard IRQ: " +
+				floatToPercent(usage.getHardIrqUsage()) +
+				")" +
+				System.lineSeparator();
+	}
+
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("Total: ")
+				.append(coreStatsToString(totalCpuUsage));
+
+		for(int i = 0; i < coreCpuUsage.size(); i++) {
+			sb.append("CPU")
+					.append(intLeadingZeros(i))
+					.append(": ")
+					.append(coreStatsToString(coreCpuUsage.get(i)));
+		}
+
+		sb.append("Boot time:         ")
+				.append(getBootTime().toString())
+				.append(System.lineSeparator());
+
+		sb.append("Context switches:  ")
+				.append(getContextSwitchesCount())
+				.append(System.lineSeparator());
+
+		sb.append("Processes created: ")
+				.append(getProcessesCreated())
+				.append(System.lineSeparator());
+
+		sb.append("Processes running: ")
+				.append(getProcessesRunning())
+				.append(System.lineSeparator());
+
+		sb.append("Processes blocked: ")
+				.append(getProcessesBlockedOnIo())
+				.append(System.lineSeparator());
+
+		return sb.toString();
 	}
 }

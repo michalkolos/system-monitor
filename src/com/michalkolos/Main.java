@@ -35,7 +35,7 @@ public class Main {
                 System.out.println(System.lineSeparator());
                 System.out.println(cpuTemp.checkTemp().map(Objects::toString).orElse("NULL"));
                 procStat.dataAcquisition();
-                procStatPrint(systemBean, procStat);
+                System.out.println(procStat.toString());
 
 
                 System.out.println(System.lineSeparator());
@@ -52,68 +52,5 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-    }
-
-
-    private static void procStatPrint(OperatingSystemMXBean systemBean, ProcStat procStat) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("Total CPU: ")
-                .append(procStat.getTotalCpuUsage())
-                .append("  -  ")
-                .append(String.valueOf(systemBean.getSystemCpuLoad()))
-                .append(System.lineSeparator());
-
-        for(int j = 0; j < procStat.getCpuCoresCount(); j++) {
-            sb.append("CPU")
-                    .append(j)
-                    .append(": ")
-                    .append(procStat.getCoreCpuUsage(j))
-                    .append(" (I/O: ")
-                    .append(procStat.getCoreCpuIoWait(j))
-                    .append(" , User: ")
-                    .append(procStat.getCoreCpuUserSpaceUsage(j))
-                    .append(" , System: ")
-                    .append(procStat.getCoreCpuSystemSpaceUsage(j))
-                    .append(" , Soft IRQ: ")
-                    .append(procStat.getCoreCpuSoftwareIrqUsage(j))
-                    .append(" , Hard IRQ: ")
-                    .append(procStat.getCoreCpuHardwareIrqUsage(j))
-                    .append(" ,     Total: ")
-                    .append(procStat.getCoreCpuIoWait(j) +
-                            procStat.getCoreCpuUserSpaceUsage(j) +
-                            procStat.getCoreCpuSystemSpaceUsage(j) +
-                            procStat.getCoreCpuSoftwareIrqUsage(j) +
-                            procStat.getCoreCpuHardwareIrqUsage(j))
-                    .append(") ")
-                    .append(System.lineSeparator());
-        }
-
-        sb.append("Boot time: ")
-                .append(procStat.getBootTime().toString())
-                .append(System.lineSeparator());
-
-        sb.append("Context switches: ")
-                .append(procStat.getContextSwitchesCount())
-                .append(System.lineSeparator());
-
-        sb.append("Processes created: ")
-                .append(procStat.getProcessesCreated())
-                .append(System.lineSeparator());
-
-        sb.append("Processes running: ")
-                .append(procStat.getProcessesRunning())
-                .append(System.lineSeparator());
-
-        sb.append("Processes blocked: ")
-                .append(procStat.getProcessesBlockedOnIo())
-                .append(System.lineSeparator());
-
-        sb.append(System.lineSeparator())
-                .append("=============================================")
-                .append(System.lineSeparator());
-
-        System.out.println(sb.toString());
     }
 }
